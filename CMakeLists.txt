@@ -7,23 +7,23 @@
 #     INSTALL_PATH=<path>                     ! defaults to ${PFUNIT}
 #     MAX_RANK=<max rank for generated code>  ! defaults to 5 or
 #                                             !   ${PFUNIT_MAX_RANK}
-# 
+#
 # Usage:
 #   cmake -DMPI=YES -DINSTALL_PATH=<A path> <path to source>
 #
 # ------------------------------------------------------------------------ #
 INCLUDE(CMakeForceCompiler)
 cmake_minimum_required(VERSION 2.8)
-project (pFUnit)
-enable_language (Fortran)
+project (pFUnit Fortran)
+#enable_language (Fortran)
 # set (CMAKE_VERBOSE_MAKEFILE 1)
 
-# MESSAGE(ENV{PFUNIT}:"$ENV{PFUNIT}") 
+# MESSAGE(ENV{PFUNIT}:"$ENV{PFUNIT}")
 # set (ENV_PFUNIT "$ENV{PFUNIT}")
-# MESSAGE(OK:"${ENV_PFUNIT}") 
-# OPTION(INSTALL_PATH "Use PFUNIT for development" "$ENV{PFUNIT}")  
-# OPTION(INSTALL_PATH "Use PFUNIT for development" "${ENV_PFUNIT}")  
-OPTION(INSTALL_PATH "Use PFUNIT for development" OFF) 
+# MESSAGE(OK:"${ENV_PFUNIT}")
+# OPTION(INSTALL_PATH "Use PFUNIT for development" "$ENV{PFUNIT}")
+# OPTION(INSTALL_PATH "Use PFUNIT for development" "${ENV_PFUNIT}")
+OPTION(INSTALL_PATH "Use PFUNIT for development" OFF)
 IF(NOT INSTALL_PATH)
    IF(DEFINED ENV{PFUNIT})
       set (INSTALL_PATH "$ENV{PFUNIT}")
@@ -93,16 +93,21 @@ endif()
 if (${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
 
     # Use ifort
-    execute_process(COMMAND ifort --version 
+    execute_process(COMMAND ifort
                     OUTPUT_VARIABLE INTEL_COMPILER_VERSION)
-    string (REGEX MATCH "([0-9]+)" 
-            NUM_VERSION ${INTEL_COMPILER_VERSION})
-    if("${NUM_VERSION}" STREQUAL "13")
-        add_definitions(-DINTEL_13)
+    #There seems to be no easy way to determine the compiler version on Windows
+    #since it isn't necessary defined in the PATH. As a workaround, assume version
+    #different to 13 if exectuing ifort doesn't give any results
+    if(NOT "${INTEL_COMPILER_VERSION}" STREQUAL "")
+      string (REGEX MATCH "([0-9]+)"
+              NUM_VERSION ${INTEL_COMPILER_VERSION})
+      if("${NUM_VERSION}" STREQUAL "13")
+          add_definitions(-DINTEL_13)
+      endif()
     endif()
     add_definitions(-DIntel)
     add_definitions(-DSTRINGIFY_OPERATOR)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS_DEBUG} -O0 -g -check uninit -check bounds -traceback -assume realloc_lhs ${CMAKE_Fortran_FLAGS}")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS_DEBUG} -Od -debug:all -check:uninit -check:bounds -traceback -assume:realloc_lhs ${CMAKE_Fortran_FLAGS}")
 
 
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
@@ -114,7 +119,7 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
 
 elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL NAG)
 
-    # use nagfor			     
+    # use nagfor
     add_definitions(-DNAG)
     add_definitions(-DSTRINGIFY_SIMPLE)
     set(HAS_CPP NO)
@@ -136,7 +141,7 @@ endif()
 # Fortran OpenMP support is not yet integrated into the CMake distribution.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/include/cmake/Modules/")
 if (OPENMP)
-#    find_package(OpenMP_Fortran REQUIRED) 
+#    find_package(OpenMP_Fortran REQUIRED)
 #    if(OPENMP_FORTRAN_FOUND)
 #      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
 #      set(CMAKE_Fortran_LINKER_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
